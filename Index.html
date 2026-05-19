@@ -1,1 +1,183 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Cricket Career Sim</title>
+    <style>
+        :root {
+            --primary: #2e7d32;
+            --secondary: #1b5e20;
+            --accent: #ffd700;
+            --bg: #f4f4f9;
+            --text: #333;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; align-items: center; }
+        header { background: var(--primary); color: white; width: 100%; padding: 1rem; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        
+        .container { max-width: 800px; width: 90%; margin: 20px auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        .stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 20px; padding: 15px; background: #e8f5e9; border-radius: 8px; border-left: 5px solid var(--primary); }
+        .stat-item { font-weight: bold; font-size: 0.9rem; }
+        .stat-value { color: var(--secondary); display: block; font-size: 1.2rem; }
+
+        .log-box { height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #fafafa; border-radius: 5px; margin-bottom: 20px; font-family: monospace; font-size: 0.9rem; }
+        .log-entry { margin-bottom: 5px; border-bottom: 1px solid #eee; padding-bottom: 2px; }
+
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        button { padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-play { background: var(--primary); color: white; }
+        .btn-play:hover { background: var(--secondary); }
+        .btn-train { background: #cfd8dc; color: #37474f; }
+        .btn-train:hover { background: #b0bec5; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+
+        .scorecard { margin-top: 20px; padding: 15px; border: 1px dashed #aaa; border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Cricket Career Pro</h1>
+    <p>From Club Level to World Legend</p>
+</header>
+
+<div class="container">
+    <div class="stats-bar">
+        <div class="stat-item">Batting Skill<span id="skill-bat" class="stat-value">30</span></div>
+        <div class="stat-item">Fitness<span id="fitness" class="stat-value">100%</span></div>
+        <div class="stat-item">Career Runs<span id="total-runs" class="stat-value">0</span></div>
+        <div class="stat-item">Rank<span id="rank" class="stat-value">Club</span></div>
+    </div>
+
+    <div id="game-log" class="log-box">
+        <div class="log-entry">Welcome to the Academy. Start training or play your first match!</div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-play" onclick="playMatch()">Play Next Match</button>
+        <button class="btn-train" onclick="train()">Intense Training (-20% Fitness)</button>
+    </div>
+
+    <div id="last-scorecard" class="scorecard" style="display:none;">
+        <h3>Last Match Performance</h3>
+        <p id="match-summary"></p>
+    </div>
+</div>
+
+<script>
+    // Game State
+    let player = {
+        battingSkill: 35,
+        fitness: 100,
+        runs: 0,
+        matches: 0,
+        rank: 'Club Player',
+        highScore: 0
+    };
+
+    const levels = [
+        { name: 'Club Player', minSkill: 0 },
+        { name: 'State Level', minSkill: 50 },
+        { name: 'National Star', minSkill: 75 },
+        { name: 'World Legend', minSkill: 95 }
+    ];
+
+    function log(message) {
+        const logBox = document.getElementById('game-log');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerText = message;
+        logBox.prepend(entry);
+    }
+
+    function updateUI() {
+        document.getElementById('skill-bat').innerText = player.battingSkill;
+        document.getElementById('fitness').innerText = player.fitness + '%';
+        document.getElementById('total-runs').innerText = player.runs;
+        
+        // Update Rank
+        const currentRank = levels.filter(l => player.battingSkill >= l.minSkill).pop();
+        player.rank = currentRank.name;
+        document.getElementById('rank').innerText = player.rank;
+    }
+
+    function train() {
+        if (player.fitness < 25) {
+            log("⚠️ You're too exhausted to train! Rest up.");
+            return;
+        }
+        
+        let gain = Math.floor(Math.random() * 3) + 1;
+        player.battingSkill += gain;
+        player.fitness -= 20;
+        log(`🏋️ Training complete! Batting skill increased by ${gain}.`);
+        updateUI();
+    }
+
+    function playMatch() {
+        if (player.fitness < 40) {
+            log("❌ Low fitness! You're likely to get injured or play poorly.");
+        }
+
+        let matchRuns = 0;
+        let ballsFaced = 0;
+        let out = false;
+
+        // Realistic Logic Loop
+        // Higher skill = lower chance of being out, higher chance of boundaries
+        while (!out && ballsFaced < 120) { // Max 120 balls (T20 style)
+            ballsFaced++;
+            let chance = Math.random() * 100;
+            
+            // Out Logic (influenced by skill and fitness)
+            let outThreshold = 5 - (player.battingSkill / 25) + (100 - player.fitness) / 20;
+            
+            if (chance < Math.max(2, outThreshold)) {
+                out = true;
+            } else {
+                // Scoring Logic
+                let scoringRoll = Math.random() * 100 + (player.battingSkill / 5);
+                if (scoringRoll > 90) matchRuns += 6;
+                else if (scoringRoll > 75) matchRuns += 4;
+                else if (scoringRoll > 40) matchRuns += 1;
+                else if (scoringRoll > 30) matchRuns += 2;
+                // else dot ball
+            }
+        }
+
+        // Apply results
+        player.runs += matchRuns;
+        player.matches++;
+        player.fitness = Math.max(10, player.fitness - 15);
+        if (matchRuns > player.highScore) player.highScore = matchRuns;
+
+        // Skill progression through experience
+        if (matchRuns > 50) player.battingSkill += 1;
+
+        // Show Scorecard
+        document.getElementById('last-scorecard').style.display = 'block';
+        document.getElementById('match-summary').innerHTML = `
+            <strong>Score:</strong> ${matchRuns} (${ballsFaced} balls) ${out ? 'out' : 'not out'}<br>
+            <strong>Strike Rate:</strong> ${((matchRuns/ballsFaced)*100).toFixed(2)}
+        `;
+
+        log(`🏏 Match ${player.matches}: Scored ${matchRuns} runs.`);
+        
+        // Passive fitness recovery
+        setTimeout(() => {
+            player.fitness = Math.min(100, player.fitness + 5);
+            updateUI();
+        }, 2000);
+
+        updateUI();
+    }
+
+    // Initialize
+    updateUI();
+</script>
+
+</body>
+</html>
